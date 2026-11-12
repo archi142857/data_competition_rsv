@@ -30,12 +30,23 @@ for nm, (a, b) in periods.items():
     t = yw.index[(yw.year >= a) & (yw.year <= b)]
     Cm = np.corrcoef(L.loc[t].to_numpy().T)
     for p, q in combinations(P, 2):
-        rows.append({'period': nm, 'r': Cm[idx[p], idx[q]], 'dist': D[idx[p], idx[q]], 'same': isl[p] == isl[q]})
+        rows.append({'period': nm, 'r': Cm[idx[p], idx[q]], 'dist': D[idx[p], idx[q]], 'same': isl[p] == isl[q], 'oki': 'Okinawa' in (p, q)})
 S = pd.DataFrame(rows)
 bins = ['<150', '150–300', '300–500', '500–800', '>800']
 S['dbin'] = pd.cut(S.dist, [0, 150, 300, 500, 800, 3000], labels=bins)
-display(S.groupby(['period', 'same', 'dbin'], observed=True).r.mean().unstack('dbin').round(2))  # same=True: 같은 섬
+SC = S.groupby(['period', 'same', 'dbin'], observed=True).r.mean().unstack('dbin')  # same=True: 같은 섬
+display(SC.round(2)); save(SC.reset_index(), 'sync_corr.csv')
+save(S.groupby('period', sort=False).r.mean().rename('r').reset_index(), 'sync_mean.csv')
+save(S.groupby(['period', 'same'], sort=False).r.mean().rename('r').reset_index(), 'sync_island.csv')
+# 800 km 넘는 다른 섬 쌍은 여름에 유행하는 오키나와가 낀 쌍이 평균을 끌어내림
+far = S[(S.dist > 800) & ~S.same].groupby(['period', 'oki'], sort=False).r.agg(['mean', 'size']).reset_index(); display(far.round(2)); save(far, 'sync_far.csv')
 print('기간별 전체 평균 상관:', S.groupby('period', sort=False).r.mean().round(3).to_dict())
+# 다른 섬 쌍의 평균은 오키나와가 낀 쌍에 크게 좌우됨. 오키나와를 뺀 평균도 따로 저장
+SN = S[~S.oki].groupby(['period', 'same'], sort=False).r.mean().rename('r').reset_index(); save(SN, 'sync_island_nooki.csv'); display(SN.round(3))
+# 세 해를 묶은 상관은 해마다 유행 시기가 달랐던 것까지 반영함. 한 해씩 따로 계산한 평균 상관
+iu = np.triu_indices(len(P), 1)
+SY = pd.DataFrame([{'year': Y, 'r': np.nanmean(np.corrcoef(L.loc[yw.index[yw.year == Y]].to_numpy().T)[iu])} for Y in sorted(yw.year.unique())])
+save(SY, 'sync_year.csv'); print('연도별 평균 상관:', SY.set_index('year').r.round(2).to_dict())
 
 fig, axes = plt.subplots(1, 3, figsize=(WD, 2.45), sharey=True)
 for ax, (per, g) in zip(axes, S.groupby('period', sort=False)):

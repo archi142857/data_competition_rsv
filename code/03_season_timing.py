@@ -17,7 +17,7 @@ for s in (1, 14, 27, 40):
         out[f'{I}_peak'] = np.median([abs(pk[idx[x]] - pk[idx[y]]) for x, y in combinations(ps, 2)])
         out[f'{I}_com'] = round(float(np.median([abs(com[idx[x]] - com[idx[y]]) for x, y in combinations(ps, 2)])), 2)
     res.append(out)
-SB = pd.DataFrame(res); display(SB)
+SB = pd.DataFrame(res); display(SB); save(SB, 'season_boundary.csv')
 
 fig, axes = plt.subplots(1, 2, figsize=(WD, 2.45))
 for ax, key, ttl in [(axes[0], 'peak', '최고 주 기준 차이'), (axes[1], 'com', '무게중심(평균 시기) 기준 차이')]:

@@ -10,12 +10,14 @@ a, b = 'pred_M2 인근 3현 추가', 'pred_M1 자기 현 이력'
 d['dSE'] = (d[a] - d.y_tgt)**2 - (d[b] - d.y_tgt)**2  # +면 M2가 더 틀림
 bp = d.groupby('pref').dSE.sum().sort_values(ascending=False)
 print('제곱 오차 증가분 중 상위 3개 현의 비중: %.2f' % (bp.head(3).sum() / d.dSE.sum()), bp.head(3).round(0).to_dict())
+save(pd.DataFrame({'pref': bp.index, 'dSE': bp.values, 'share': bp.values / d.dSE.sum()}), 'error2022_by_pref.csv')
 display(d.sort_values('dSE', ascending=False).head(8)[['pref', 'o_week', 't_week', 'y_now', 'y_tgt', b, a]].round(1))
 
 peak = {p: int(yw.loc[W[p].loc[yw.index[yw.year == 2022]].idxmax(), 'week']) for p in ['Aichi', 'Osaka', 'Hyogo']}
 print('2022년 정점 주:', peak)
 # 본문 오사카 예시 (29주에 33주 예측)
 display(d[(d.pref == 'Osaka') & (d.o_week == 29)][['o_week', 't_week', 'y_now', 'y_tgt', b, a]].round(0))
+save(d[d.pref.isin(['Aichi', 'Osaka', 'Hyogo']) & d.o_week.between(27, 31)][['pref', 'o_week', 't_week', 'y_now', 'y_tgt', b, a]].assign(peak=lambda x: x.pref.map(peak)), 'error2022_rows.csv')
 
 fig, axes = plt.subplots(1, 2, figsize=(WD, 2.45))
 for ax, p, nm in [(axes[0], 'Osaka', '오사카'), (axes[1], 'Aichi', '아이치')]:
